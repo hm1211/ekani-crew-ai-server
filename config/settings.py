@@ -31,13 +31,13 @@ class Settings(BaseSettings):
     @property
     def BASE_URL(self) -> str:
         if self.is_production:
-            return "https://hexa-ai-server-production.up.railway.app"
+            return "https://api.mbtimate.com"
         return "http://localhost:8000"
 
     @property
     def FRONTEND_URL(self) -> str:
         if self.is_production:
-            return "https://hexa-frontend-chi.vercel.app"
+            return "https://mbtimate.com"
         return "http://localhost:3000"
 
     # Google OAuth Settings
