@@ -12,8 +12,6 @@ class UserModel(Base):
     email = Column(String(255), nullable=False, unique=True, index=True)
     mbti = Column(String(4), nullable=True)
     gender = Column(String(10), nullable=True)
-    session_id = Column(String(255), nullable=True, unique=True, index=True)
-    session_expires_at = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, nullable=True)
 
     # Relationships

@@ -5,16 +5,13 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session as DbSession
 
 from app.auth.infrastructure.oauth.google_oauth_service import GoogleOAuthService
-from app.auth.infrastructure.repository.mysql_session_repository import (
-    MySqlSessionRepository,
-)
+from app.auth.infrastructure.repository.redis_session_repository import RedisSessionRepository
+from app.auth.application.port.session_repository_port import SessionRepositoryPort
 from app.auth.domain.session import Session
 from app.user.infrastructure.model.user_model import UserModel
 from config.database import get_db
 from config.settings import get_settings
-from config.database import get_db_session
-from app.user.infrastructure.repository.mysql_user_repository import MySQLUserRepository
-from app.user.domain.user import User
+from config.redis import redis_client
 
 google_oauth_router = APIRouter()
 
@@ -22,8 +19,8 @@ google_oauth_router = APIRouter()
 service = GoogleOAuthService()
 
 
-def get_session_repo(db: DbSession = Depends(get_db)) -> MySqlSessionRepository:
-    return MySqlSessionRepository(db)
+def get_session_repo() -> SessionRepositoryPort:
+    return RedisSessionRepository(redis_client)
 
 
 @google_oauth_router.get("/google")
@@ -34,13 +31,18 @@ async def redirect_to_google():
 
 
 @google_oauth_router.get("/google/callback")
-async def google_callback(code: str, state: str | None = None, db: DbSession = Depends(get_db)):
+async def google_callback(
+    code: str,
+    state: str | None = None,
+    db: DbSession = Depends(get_db),
+    session_repo: SessionRepositoryPort = Depends(get_session_repo),
+):
     """
     Google OAuth 콜백 처리.
 
     1. code로 access token 획득
     2. access token으로 프로필 조회
-    3. DB에 유저 저장/업데이트 및 세션 저장
+    3. DB에 유저 저장/업데이트 및 Redis에 세션 저장
     4. 쿠키에 session_id 설정 후 프론트엔드로 리다이렉트
     """
     # Access token 획득 및 프로필 조회
@@ -57,9 +59,8 @@ async def google_callback(code: str, state: str | None = None, db: DbSession = D
         db.add(user)
         db.commit()
 
-    # Session 생성
+    # Session 생성 (Redis에 저장)
     session_id = str(uuid.uuid4())
-    session_repo = MySqlSessionRepository(db)
     session_repo.save(Session(session_id=session_id, user_id=google_id))
 
     # 프론트엔드로 리다이렉트 + 쿠키 설정
@@ -79,12 +80,16 @@ async def google_callback(code: str, state: str | None = None, db: DbSession = D
 
 
 @google_oauth_router.get("/status")
-async def auth_status(request: Request, session_id: str | None = Cookie(None), db: DbSession = Depends(get_db)):
+async def auth_status(
+    request: Request,
+    session_id: str | None = Cookie(None),
+    db: DbSession = Depends(get_db),
+    session_repo: SessionRepositoryPort = Depends(get_session_repo),
+):
     """현재 로그인 상태 확인"""
     if not session_id:
         return {"logged_in": False}
 
-    session_repo = MySqlSessionRepository(db)
     session = session_repo.find_by_session_id(session_id)
 
     if not session:
@@ -103,10 +108,12 @@ async def auth_status(request: Request, session_id: str | None = Cookie(None), d
 
 
 @google_oauth_router.post("/logout")
-async def logout(session_id: str | None = Cookie(None), db: DbSession = Depends(get_db)):
+async def logout(
+    session_id: str | None = Cookie(None),
+    session_repo: SessionRepositoryPort = Depends(get_session_repo),
+):
     """로그아웃 - 세션 삭제"""
     if session_id:
-        session_repo = MySqlSessionRepository(db)
         session_repo.delete(session_id)
 
     response = JSONResponse(status_code=204, content=None)
