@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Text
+from sqlalchemy.orm import relationship
 from config.database import Base
 
 
@@ -12,3 +13,6 @@ class ConsultMessageModel(Base):
     role = Column(String(20), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=False)
+
+    # Relationships
+    session = relationship("ConsultSessionModel", back_populates="messages")
