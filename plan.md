@@ -150,14 +150,14 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 공통 기반 (하민, 대호 협업)
 
-- [ ] `MBTI-1` [MBTI] 사용자로서, 채팅 형식으로 MBTI 검사를 하고 싶다
+- [x] `MBTI-1` [MBTI] 사용자로서, 채팅 형식으로 MBTI 검사를 하고 싶다
   - **Domain**: `MBTITestSession` (id, user_id, phase='human'|'ai', status, question_index, created_at)
   - **Domain**: `MBTIMessage` (role, content, source='human'|'ai')
   - **Domain**: `MBTIDimensionScore` (e_score, i_score, s_score, n_score, t_score, f_score, j_score, p_score)
   - **API**: `POST /mbti-test/start` → 세션 시작, 사람 질문 1번 반환
   - **✅ 인수 조건**: 세션 생성, 1단계(사람 질문)부터 시작
 
-- [ ] `MBTI-1-1` [MBTI] 시스템으로서, 세션/응답을 DB에 저장하고 싶다
+- [x] `MBTI-1-1` [MBTI] 시스템으로서, 세션/응답을 DB에 저장하고 싶다
   - **Domain**: `MBTIAnswer` (id, session_id, question_id, question_text, answer_text, dimension, weight_applied, created_at)
   - **Repository**: `MBTITestSessionRepository` - 세션 CRUD
   - **Repository**: `MBTIAnswerRepository` - 응답 CRUD
@@ -180,7 +180,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 📋 1단계: 사람이 만든 질문 12개 (하민)
 
-- [ ] `MBTI-2` [MBTI] 사용자로서, 사람이 만든 질문 12개에 답하고 싶다
+- [x] `MBTI-2` [MBTI] 사용자로서, 사람이 만든 질문 12개에 답하고 싶다
   - **Domain**: `HumanQuestion` (id, text, dimension, options, weights)
   - **Domain**: `AnswerKeyword` (id, question_id, keyword, dimension, score)
     - 예: 질문 "우울해서 빵샀어 그러면 뭐라 대답할래?"
@@ -202,7 +202,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 🤖 2단계: AI가 만든 질문 12개 (대호)
 
-- [ ] `MBTI-3` [MBTI] 사용자로서, AI가 만든 적응형 질문 12개에 답하고 싶다
+- [x] `MBTI-3` [MBTI] 사용자로서, AI가 만든 적응형 질문 12개에 답하고 싶다
   - **Input**: 1단계에서 계산된 MBTI 비중 (예: E 60%/I 40%, S 30%/N 70%...)
   - **Adapter**: `AIQuestionProvider` (gpt-4o-mini)
   - **Prompt**: MBTI 비중을 받아 애매한 차원(50:50에 가까운)을 집중 검증하는 질문 생성
@@ -250,7 +250,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 #### Matching Domain (Team Match)
 
-- [ ] `MATCH-1` [Matching] 사용자로서, 매칭 대기열에 등록하고 싶다
+- [x] `MATCH-1` [Matching] 사용자로서, 매칭 대기열에 등록하고 싶다
   - **Domain**: `MatchingQueue` (user_id, status, created_at)
   - **API**: `POST /matching/queue` → 대기열 등록
   - **✅ 인수 조건**: 대기열 등록, 중복 등록 방지
@@ -276,7 +276,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 #### Chat Domain (Team Match)
 
-- [-] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성되고 메시지를 DB에 저장할 수 있다
+- [x] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성되고 메시지를 DB에 저장할 수 있다
   - **Domain**: `ChatRoom` (id, match_id, created_at)
   - **Domain**: `ChatMessage` (id, room_id, sender_id, content, created_at)
   - **Repository**: `ChatRoomRepository` - 채팅방 저장/조회
