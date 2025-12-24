@@ -8,7 +8,7 @@ from app.mbti_test.domain.mbti_test_session import MBTITestSession, TestType
 
 class StartMBTITestCommand(BaseModel):
     user_id: uuid.UUID
-    test_type: TestType
+    test_type: TestType = TestType.HUMAN  # 항상 human 12개 + AI 12개 순서
 
 
 class StartMBTITestResponse(BaseModel):

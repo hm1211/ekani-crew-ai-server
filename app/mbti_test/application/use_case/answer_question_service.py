@@ -54,8 +54,10 @@ class AnswerQuestionService(AnswerQuestionUseCase):
 
         # 4. Get next question based on phase
         if current_index < HUMAN_QUESTION_COUNT:
-            # Human phase (questions 0-11)
-            next_question = self._human_question_provider.get_question(current_index)
+            # Human phase (questions 0-11) - 세션에 저장된 랜덤 선택 질문 사용
+            next_question = self._human_question_provider.get_question_from_list(
+                current_index, session.selected_human_questions
+            )
         else:
             # AI phase (questions 12-23)
             history = self._build_chat_history(session)

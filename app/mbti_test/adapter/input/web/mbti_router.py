@@ -7,13 +7,11 @@ from app.mbti_test.application.port.input.start_mbti_test_use_case import StartM
 from app.mbti_test.application.port.input.answer_question_use_case import AnswerQuestionCommand
 from app.mbti_test.application.use_case.start_mbti_test_service import StartMBTITestService
 from app.mbti_test.application.use_case.answer_question_service import AnswerQuestionService
-from app.mbti_test.domain.mbti_test_session import TestType
+from app.mbti_test.domain.mbti_test_session import TestType  # 세션 저장용으로 유지
 from app.auth.adapter.input.web.auth_dependency import get_current_user_id
 from app.mbti_test.application.port.output.mbti_test_session_repository import MBTITestSessionRepositoryPort
-from app.mbti_test.application.port.output.question_provider_port import QuestionProviderPort
 from app.mbti_test.application.port.ai_question_provider_port import AIQuestionProviderPort
 from app.mbti_test.infrastructure.repository.in_memory_mbti_test_session_repository import InMemoryMBTITestSessionRepository
-from app.mbti_test.infrastructure.service.in_memory_question_provider import InMemoryQuestionProvider
 from app.mbti_test.infrastructure.service.human_question_provider import HumanQuestionProvider
 from app.mbti_test.adapter.output.openai_ai_question_provider import create_openai_question_provider_from_settings
 
@@ -25,10 +23,6 @@ _session_repository = InMemoryMBTITestSessionRepository()
 
 def get_session_repository() -> MBTITestSessionRepositoryPort:
     return _session_repository
-
-
-def get_question_provider() -> QuestionProviderPort:
-    return InMemoryQuestionProvider()
 
 
 def get_human_question_provider() -> HumanQuestionProvider:
@@ -45,13 +39,12 @@ class AnswerRequest(BaseModel):
 
 @mbti_router.post("/start")
 async def start_mbti_test(
-    test_type: TestType = TestType.HUMAN,
     user_id: str = Depends(get_current_user_id),
     session_repository: MBTITestSessionRepositoryPort = Depends(get_session_repository),
-    question_provider: QuestionProviderPort = Depends(get_question_provider)
+    human_question_provider: HumanQuestionProvider = Depends(get_human_question_provider),
 ):
-    use_case = StartMBTITestService(session_repository, question_provider)
-    command = StartMBTITestCommand(user_id=uuid.UUID(user_id), test_type=test_type)
+    use_case = StartMBTITestService(session_repository, human_question_provider)
+    command = StartMBTITestCommand(user_id=uuid.UUID(user_id))
     result = use_case.execute(command)
 
     return jsonable_encoder({"session": result.session, "first_question": result.first_question})

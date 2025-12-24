@@ -20,6 +20,7 @@ class MBTITestSession:
     test_type: TestType
     status: TestStatus
     created_at: datetime
-    questions: List[str] = field(default_factory=list)
+    questions: List[str] = field(default_factory=list)  # 질문 히스토리
     answers: List[Dict] = field(default_factory=list)
     current_question_index: int = 0
+    selected_human_questions: List[str] = field(default_factory=list)  # 세션 시작 시 랜덤 선택된 12개 질문
