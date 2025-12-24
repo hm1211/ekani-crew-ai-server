@@ -132,7 +132,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 공통 기반 (하민, 대호 협업)
 
-- [ ] `MBTI-1` [MBTI] 사용자로서, 채팅 형식으로 MBTI 테스트를 하고 싶다
+- [x] `MBTI-1` [MBTI] 사용자로서, 채팅 형식으로 MBTI 테스트를 하고 싶다
   - **Domain**: `MBTITestSession` (id, user_id, test_type='human'|'ai', status, created_at)
   - **Domain**: `MBTIMessage` (role, content, source='human'|'ai')
   - **API**: `POST /mbti-test/start?type=human|ai` → 세션 시작, 첫 질문 반환
@@ -142,7 +142,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 📋 테스트 A: 저장된 질문 기반 (하민)
 
-- [ ] `MBTI-2` [MBTI] 사용자로서, 저장된 질문에 답하며 MBTI 테스트를 하고 싶다
+- [x] `MBTI-2` [MBTI] 사용자로서, 저장된 질문에 답하며 MBTI 테스트를 하고 싶다
   - **Domain**: `HumanQuestion` (id, text, dimension, options)
   - **Adapter**: `HumanQuestionProvider` - 질문 DB에서 조회
   - **UseCase**: `AnswerHumanQuestionUseCase`
