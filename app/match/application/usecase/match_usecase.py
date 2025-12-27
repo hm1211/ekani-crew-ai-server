@@ -1,23 +1,57 @@
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from app.match.application.port.output.chat_room_port import ChatRoomPort
 from app.match.application.service.match_service import MatchService
 from app.shared.vo.mbti import MBTI
 from app.match.domain.match_ticket import MatchTicket
 from app.match.application.port.output.match_queue_port import MatchQueuePort
+from app.match.application.port.output.match_state_port import MatchStatePort, MatchState
 
 
 class MatchUseCase:
-    def __init__(self, match_queue_port: MatchQueuePort, chat_room_port: ChatRoomPort):
+    # How long to wait for user to connect to chat before match expires (seconds)
+    MATCH_EXPIRE_SECONDS = 60
+
+    def __init__(
+        self,
+        match_queue_port: MatchQueuePort,
+        chat_room_port: ChatRoomPort,
+        match_state_port: Optional[MatchStatePort] = None
+    ):
         self.match_queue = match_queue_port
         self.match_service = MatchService(match_queue_port)
         self.chat_room_port = chat_room_port
+        self.match_state = match_state_port
 
     async def request_match(self, user_id: str, mbti: MBTI, level: int = 1) -> dict:
         """
         유저의 매칭 요청을 처리합니다 (Enqueue).
         """
+        # Check if user is already matched or chatting
+        if self.match_state:
+            user_state = await self.match_state.get_state(user_id)
+            if user_state:
+                if user_state.state == MatchState.MATCHED:
+                    return {
+                        "status": "already_matched",
+                        "message": "이미 매칭되었습니다. 채팅방에 입장해주세요.",
+                        "roomId": user_state.room_id,
+                        "my_mbti": mbti.value,
+                        "partner": {
+                            "user_id": user_state.partner_id,
+                            "mbti": None  # We don't store partner's MBTI in state
+                        }
+                    }
+                elif user_state.state == MatchState.CHATTING:
+                    return {
+                        "status": "already_chatting",
+                        "message": "이미 채팅 중입니다.",
+                        "roomId": user_state.room_id,
+                        "my_mbti": mbti.value
+                    }
+
         if await self.match_queue.is_user_in_queue(user_id, mbti):
             wait_count = await self.get_waiting_count(mbti)
             return {
@@ -34,6 +68,21 @@ class MatchUseCase:
         partner_ticket = await self.match_service.find_partner(my_ticket, level)
 
         if partner_ticket:
+            # Check if partner is still available (not matched/chatting with someone else)
+            if self.match_state:
+                if not await self.match_state.is_available_for_match(partner_ticket.user_id):
+                    # Partner is no longer available, try to find another partner
+                    # For now, just add user to queue
+                    await self.match_queue.enqueue(my_ticket)
+                    await self.match_state.set_queued(user_id, mbti.value)
+                    wait_count = await self.get_waiting_count(mbti)
+                    return {
+                        "status": "waiting",
+                        "message": "매칭 대기열에 등록되었습니다.",
+                        "my_mbti": mbti.value,
+                        "wait_count": wait_count
+                    }
+
             # 2. [MATCH-3] 매칭 성공 시 채팅방 데이터 생성
             room_id = str(uuid.uuid4())
             timestamp = datetime.now().isoformat()
@@ -50,6 +99,23 @@ class MatchUseCase:
             # 3. [MATCH-3] Chat 도메인으로 데이터 전송 (비동기 처리 가능)
             await self.chat_room_port.create_chat_room(match_payload)
 
+            # 4. Set matched state for both users (with expiration)
+            if self.match_state:
+                await self.match_state.set_matched(
+                    user_id=my_ticket.user_id,
+                    mbti=my_ticket.mbti.value,
+                    room_id=room_id,
+                    partner_id=partner_ticket.user_id,
+                    expire_seconds=self.MATCH_EXPIRE_SECONDS
+                )
+                await self.match_state.set_matched(
+                    user_id=partner_ticket.user_id,
+                    mbti=partner_ticket.mbti.value,
+                    room_id=room_id,
+                    partner_id=my_ticket.user_id,
+                    expire_seconds=self.MATCH_EXPIRE_SECONDS
+                )
+
             return {
                 "status": "matched",
                 "message": "매칭이 성사되었습니다!",
@@ -64,6 +130,9 @@ class MatchUseCase:
         # 매칭 실패 시 대기열 등록
         try:
             await self.match_queue.enqueue(my_ticket)
+            # Set queued state
+            if self.match_state:
+                await self.match_state.set_queued(user_id, mbti.value)
             status = "waiting"
             message = "매칭 대기열에 등록되었습니다."
 
@@ -87,6 +156,10 @@ class MatchUseCase:
         """
         # Redis IO 발생 -> await 필수!
         is_removed = await self.match_queue.remove(user_id, mbti)
+
+        # Clear user state regardless of queue removal result
+        if self.match_state:
+            await self.match_state.clear_state(user_id)
 
         if is_removed:
             return {"status": "cancelled", "message": "매칭이 취소되었습니다."}

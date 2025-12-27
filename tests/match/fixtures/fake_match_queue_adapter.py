@@ -57,3 +57,16 @@ class FakeMatchQueueAdapter(MatchQueuePort):
         # 사이즈 내림차순 정렬
         result.sort(key=lambda x: x[1], reverse=True)
         return result
+
+    async def is_user_in_queue(self, user_id: str, mbti: MBTI) -> bool:
+        """
+        테스트용: 유저가 대기열에 있는지 확인
+        """
+        mbti_key = mbti.value
+        if mbti_key not in self._queues:
+            return False
+
+        for ticket in self._queues[mbti_key]:
+            if ticket.user_id == user_id:
+                return True
+        return False
