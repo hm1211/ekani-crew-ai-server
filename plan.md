@@ -271,7 +271,7 @@ Person C,D ─→ 버그 픽스, UX 개선
   - **API**: `POST /user/{user_id}/block` → 유저 차단
   - **✅ 인수 조건**: 차단한 유저와 매칭 안 됨, 기존 채팅방 비활성화
 
-- [ ] `CHAT-8` [Chat] 사용자로서, 채팅이 끝난 후 상대방을 평가하고 싶다
+- [x] `CHAT-8` [Chat] 사용자로서, 채팅이 끝난 후 상대방을 평가하고 싶다
   - **Domain**: `Rating` (id, rater_id, rated_user_id, room_id, score, feedback, created_at)
   - **UseCase**: `RateUserUseCase` - 상대 평가
   - **API**: `POST /chat/{room_id}/rate` → 평가 제출
