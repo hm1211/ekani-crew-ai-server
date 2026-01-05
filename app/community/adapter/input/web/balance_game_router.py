@@ -100,6 +100,7 @@ class BalanceGameDetailResponse(BaseModel):
     comments: list[BalanceGameDetailCommentResponse]
     is_votable: bool
     created_at: datetime
+    user_choice: str | None = None  # 사용자의 투표 선택 (left/right/None)
 
 
 class VoteRequest(BaseModel):
@@ -352,6 +353,7 @@ def get_balance_game_list(
 @balance_game_router.get("/balance/{game_id}")
 def get_balance_game_detail(
     game_id: str,
+    user_id: str | None = None,
     game_repo: BalanceGameRepositoryPort = Depends(get_balance_game_repository),
     vote_repo: BalanceVoteRepositoryPort = Depends(get_balance_vote_repository),
     comment_repo: CommentRepositoryPort = Depends(get_comment_repository),
@@ -366,7 +368,7 @@ def get_balance_game_detail(
     )
 
     try:
-        detail = use_case.execute(game_id)
+        detail = use_case.execute(game_id, user_id=user_id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -398,4 +400,5 @@ def get_balance_game_detail(
         comments=comments,
         is_votable=detail.is_votable,
         created_at=detail.created_at,
+        user_choice=detail.user_choice,
     )

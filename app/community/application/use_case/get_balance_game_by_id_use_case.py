@@ -39,6 +39,7 @@ class BalanceGameDetail:
     comments: list[BalanceGameCommentDTO]
     is_votable: bool
     created_at: datetime
+    user_choice: str | None = None  # 사용자의 투표 선택 (left/right/None)
 
 
 class GetBalanceGameByIdUseCase:
@@ -58,7 +59,7 @@ class GetBalanceGameByIdUseCase:
         self._comment_repo = comment_repository
         self._user_repo = user_repository
 
-    def execute(self, game_id: str) -> BalanceGameDetail:
+    def execute(self, game_id: str, user_id: str | None = None) -> BalanceGameDetail:
         """밸런스 게임 상세를 조회한다"""
         game = self._game_repo.find_by_id(game_id)
         if game is None:
@@ -72,6 +73,13 @@ class GetBalanceGameByIdUseCase:
 
         left_percentage = (left_votes / total_votes * 100) if total_votes > 0 else 0.0
         right_percentage = (right_votes / total_votes * 100) if total_votes > 0 else 0.0
+
+        # 사용자 투표 조회
+        user_choice: str | None = None
+        if user_id:
+            user_vote = self._vote_repo.find_by_game_and_user(game_id, user_id)
+            if user_vote:
+                user_choice = user_vote.choice.value
 
         # 댓글 조회
         comments = self._comment_repo.find_by_target("balance_game", game_id)
@@ -108,6 +116,7 @@ class GetBalanceGameByIdUseCase:
             comments=comment_dtos,
             is_votable=is_votable,
             created_at=game.created_at,
+            user_choice=user_choice,
         )
 
     def _is_votable(self, created_at: datetime) -> bool:
