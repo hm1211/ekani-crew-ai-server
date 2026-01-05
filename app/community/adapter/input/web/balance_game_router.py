@@ -59,7 +59,6 @@ class BalanceGameResponse(BaseModel):
     option_left: str
     option_right: str
     week_of: str
-    is_active: bool
 
 
 class BalanceGameListItemResponse(BaseModel):
@@ -146,7 +145,6 @@ def get_current_balance_game(
         option_left=game.option_left,
         option_right=game.option_right,
         week_of=game.week_of,
-        is_active=game.is_active,
     )
 
 
