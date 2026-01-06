@@ -66,6 +66,7 @@ class ChatRoomPreviewResponse(BaseModel):
     user1_id: str
     user2_id: str
     created_at: datetime
+    status: str = "active"
     latest_message: Optional[ChatMessageResponse] = None
     unread_count: int = 0
 
@@ -135,6 +136,7 @@ def get_my_chat_rooms(
             user1_id=preview.user1_id,
             user2_id=preview.user2_id,
             created_at=preview.created_at,
+            status=preview.status,
             latest_message=latest_message_response,
             unread_count=preview.unread_count
         )
