@@ -59,6 +59,8 @@ class ChatMessageResponse(BaseModel):
 
 class ChatHistoryResponse(BaseModel):
     """채팅 기록 응답 DTO"""
+    user1_id: str
+    user2_id: str
     messages: list[ChatMessageResponse]
 
 
@@ -81,15 +83,21 @@ class MyChatRoomsResponse(BaseModel):
 @chat_router.get("/chat/{room_id}/messages", response_model=ChatHistoryResponse)
 def get_chat_history(
     room_id: str,
-    repository: ChatMessageRepositoryPort = Depends(get_chat_message_repository)
+    message_repository: ChatMessageRepositoryPort = Depends(get_chat_message_repository),
+    room_repository: ChatRoomRepositoryPort = Depends(get_chat_room_repository)
 ):
     """
     채팅방의 메시지 기록을 조회한다.
 
     - room_id: 채팅방 ID
-    - 반환: 시간순으로 정렬된 메시지 목록
+    - 반환: 채팅방 참여자 정보와 시간순으로 정렬된 메시지 목록
     """
-    use_case = GetChatHistoryUseCase(repository)
+    # 채팅방 정보 조회
+    room = room_repository.find_by_id(room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail="채팅방을 찾을 수 없습니다")
+
+    use_case = GetChatHistoryUseCase(message_repository)
     messages = use_case.execute(room_id)
 
     message_responses = [
@@ -103,7 +111,11 @@ def get_chat_history(
         for msg in messages
     ]
 
-    return ChatHistoryResponse(messages=message_responses)
+    return ChatHistoryResponse(
+        user1_id=room.user1_id,
+        user2_id=room.user2_id,
+        messages=message_responses
+    )
 
 
 @chat_router.get("/chat/rooms/my", response_model=MyChatRoomsResponse)
