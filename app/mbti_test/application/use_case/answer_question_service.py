@@ -92,7 +92,7 @@ class AnswerQuestionService(AnswerQuestionUseCase):
             score = analysis["score"]
         else:
             # AI phase: AI 기반 분석 (맥락 포함)
-            history = self._build_chat_history(session)
+            history = []
             target_dim = (session.pending_question_dimension or "SN").replace("/", "")
             analyze_command = AnalyzeAnswerCommand(
                 question=session.pending_question or "",
